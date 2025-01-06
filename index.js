@@ -1,32 +1,56 @@
 // index.js
-// where your node app starts
+const express = require('express');
+const app = express();
+const cors = require('cors');
+require('dotenv').config();
 
-// init project
-var express = require('express');
-var app = express();
+// Enable CORS for all requests
+app.use(cors({ optionsSuccessStatus: 200 }));
 
-// enable CORS (https://en.wikipedia.org/wiki/Cross-origin_resource_sharing)
-// so that your API is remotely testable by FCC 
-var cors = require('cors');
-app.use(cors({optionsSuccessStatus: 200}));  // some legacy browsers choke on 204
-
-// http://expressjs.com/en/starter/static-files.html
+// Serve static files from 'public' directory
 app.use(express.static('public'));
 
-// http://expressjs.com/en/starter/basic-routing.html
-app.get("/", function (req, res) {
+// Root endpoint - serve index.html
+app.get('/', function (req, res) {
   res.sendFile(__dirname + '/views/index.html');
 });
 
+// API endpoint - handle date parameter
+app.get('/api/:date?', function (req, res) {
+  let date;
+  const dateParam = req.params.date;
 
-// your first API endpoint... 
-app.get("/api/hello", function (req, res) {
-  res.json({greeting: 'hello API'});
+  // Handle empty date parameter - return current time
+  if (!dateParam) {
+    date = new Date();
+    return res.json({
+      unix: date.getTime(),
+      utc: date.toUTCString()
+    });
+  }
+
+  // Handle Unix timestamp (milliseconds)
+  if (/^\d+$/.test(dateParam)) {
+    date = new Date(parseInt(dateParam));
+  } else {
+    // Handle date string
+    date = new Date(dateParam);
+  }
+
+  // Check if date is valid
+  if (date.toString() === 'Invalid Date') {
+    return res.json({ error: 'Invalid Date' });
+  }
+
+  // Return successful response
+  res.json({
+    unix: date.getTime(),
+    utc: date.toUTCString()
+  });
 });
 
-
-
-// Listen on port set in environment variable or default to 3000
-var listener = app.listen(process.env.PORT || 3000, function () {
-  console.log('Your app is listening on port ' + listener.address().port);
+// Listen on port specified in environment or 3000
+const port = process.env.PORT || 3000;
+app.listen(port, function() {
+  console.log(`Listening on port ${port}`);
 });
